@@ -91,10 +91,8 @@ function ehltype.typewriter_formspec(typewriter_itemstack)
         "formspec_version[3]",
         "size[6,3.476]",
         "field[0.375,1.25;5.25,0.8;text;"..text..";"..current_word.."]",
-        --"field[0.375,1.25;5.25,0.8;text;"..text..";]",
         "button[1.75,2.3;3,0.8;set_text;"..text.."]",
         "checkbox[0.375,2.3;reverse;"..reverse..";"..is_selected.."]", --the is_selected is needed, otherwise the player would be confused by the meaning of his previous inputs.
-        --"checkbox[0.375,2.3;reverse;"..reverse..";]"
     }
     -- table.concat is faster than string concatenation - `..`
     return table.concat(formspec, "")
@@ -168,6 +166,7 @@ minetest.register_craftitem(minetest.get_current_modname()..":typewriter",
     {
         description = "a typewriter",
         inventory_image = "ehltype_typewriter.png",
+        stack_max = 1,
         on_place = function(itemstack, placer, pointed_thing)
             if pointed_thing.type == "node" and placer:is_player() then
                 local pointed_velocity = {x = pointed_thing.above.x-pointed_thing.under.x, y = pointed_thing.above.y-pointed_thing.under.y, z = pointed_thing.above.z-pointed_thing.under.z}
@@ -194,7 +193,16 @@ minetest.register_craftitem(minetest.get_current_modname()..":typewriter",
                         return                         
                      end
                 end
-                
+                --checking area protection
+                local current_position = {x=pointed_thing.above.x, y=pointed_thing.above.y, z=pointed_thing.above.z}
+                for _i=1,#current_text do
+                    if minetest.is_protected(current_position, name) then
+                        minetest.chat_send_player(name, name..", your text overlaps with a protected area of an other player! You can not place it there.")
+                        return
+                    end
+                    current_position = {x=current_position.x+pointed_velocity.x, y=current_position.y+pointed_velocity.y, z=current_position.z+pointed_velocity.z}
+                end
+                --finally placing the text.
                 ehltype.place_text_in_world(current_text, pointed_thing.above, pointed_velocity, 1)
             end
         end,
@@ -210,7 +218,7 @@ minetest.register_craftitem(minetest.get_current_modname()..":typewriter",
         output = "ehltype:typewriter",
         recipe = {
             {"default:stick", "default:coal_lump", "default:stick"},
-            {"default:steel_ingot", "default:steel_ingot", "default:steel_ingot"},
+            {"default:steel_ingot", "default:paper", "default:steel_ingot"},
             {"default:steel_ingot", "default:steel_ingot", "default:steel_ingot"},
         }
     })
