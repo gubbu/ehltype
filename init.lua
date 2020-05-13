@@ -1,6 +1,6 @@
 ehltype = {}
---copied from ehlphabet mod
 --TODO add translation.
+--copied from ehlphabet mod
 local function is_multibyte(ch)
     local byte = ch:byte()
     -- return (195 == byte) or (208 == byte) or (209 == byte)
@@ -39,7 +39,7 @@ function ehltype.place_text_in_world(text, start, velocity, number_repeat)
                     -- wroks not for utf8: local key = ch:byte()
                     local key = ch:byte()
                     if mb then
-                        
+
                         key = key..(text:sub(i+1,i+1):byte() or "nil")
                         minetest.chat_send_all("trying to write utf8 symbol:"..key.."maybe this symbol is unknown")
                         skip_next = true
@@ -162,11 +162,11 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 
 end)
 
-minetest.register_craftitem(minetest.get_current_modname()..":typewriter",
+minetest.register_tool(minetest.get_current_modname()..":typewriter",
     {
         description = "a typewriter",
         inventory_image = "ehltype_typewriter.png",
-        stack_max = 1,
+        groups = {tool = 1},
         on_place = function(itemstack, placer, pointed_thing)
             if pointed_thing.type == "node" and placer:is_player() then
                 local pointed_velocity = {x = pointed_thing.above.x-pointed_thing.under.x, y = pointed_thing.above.y-pointed_thing.under.y, z = pointed_thing.above.z-pointed_thing.under.z}
@@ -174,11 +174,13 @@ minetest.register_craftitem(minetest.get_current_modname()..":typewriter",
                 local current_meta = itemstack:get_meta()
                 local current_text = current_meta:get_string("current_word")
                 --minetest.chat_send_all(name.." is placing text:".. current_text .." in the direction: " .. minetest.serialize(pointed_velocity))
-                -- checking for creative mode, copied from the screwdriver mod not (creative and creative.is_enabled_for and creative.is_enabled_for(player_name))
+                -- checking for creative mode, copied from the screwdriver mod: https://github.com/minetest-game-mods/screwdriver/blob/master/init.lua
                 if not (creative and creative.is_enabled_for and creative.is_enabled_for(name)) then
-                    --TODO: ading wear and checking all permissions
+                    --adding wear depending on the texts lenght.
+                    itemstack:add_wear(65535/math.abs(200-#current_text))
+                    --minetest.chat_send_player(name, name..", current wear"..itemstack:get_wear())
                     if not ehltype.can_place_text_in_world(current_text, pointed_thing.above, pointed_velocity, 1) then
-                            minetest.chat_send_player(name, name..", the text that you want to write down was obstructed by a node that is not air and not water.")
+                        minetest.chat_send_player(name, name..", the text that you want to write down was obstructed by a node that is not air and not water.")
                         return
                     end
                     local costs = #current_text
@@ -188,10 +190,10 @@ minetest.register_craftitem(minetest.get_current_modname()..":typewriter",
                     local stack = ItemStack("ehlphabet:block "..costs)
                     if inv:contains_item("main", stack) then
                         inv:remove_item("main", stack)
-                     else
+                    else
                         minetest.chat_send_player(name, name..", you need "..costs.." ehlphabet blocks in your inventory to write your text down in survival!")
-                        return                         
-                     end
+                        return
+                    end
                 end
                 --checking area protection
                 local current_position = {x=pointed_thing.above.x, y=pointed_thing.above.y, z=pointed_thing.above.z}
@@ -205,6 +207,7 @@ minetest.register_craftitem(minetest.get_current_modname()..":typewriter",
                 --finally placing the text.
                 ehltype.place_text_in_world(current_text, pointed_thing.above, pointed_velocity, 1)
             end
+            return itemstack
         end,
         on_use = function(itemstack, placer, pointed_thing)
             if placer:is_player() then
@@ -214,11 +217,11 @@ minetest.register_craftitem(minetest.get_current_modname()..":typewriter",
         end
     })
 
-    minetest.register_craft({
-        output = "ehltype:typewriter",
-        recipe = {
-            {"default:stick", "default:coal_lump", "default:stick"},
-            {"default:steel_ingot", "default:paper", "default:steel_ingot"},
-            {"default:steel_ingot", "default:steel_ingot", "default:steel_ingot"},
-        }
-    })
+minetest.register_craft({
+    output = "ehltype:typewriter",
+    recipe = {
+        {"default:stick", "default:coal_lump", "default:stick"},
+        {"default:steel_ingot", "default:paper", "default:steel_ingot"},
+        {"default:steel_ingot", "default:steel_ingot", "default:steel_ingot"},
+    }
+})
